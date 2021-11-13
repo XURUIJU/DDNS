@@ -5,8 +5,8 @@ App = {
       DDNService: null
     },
     currentAddress: '',
-    contractAddress: '0xb202A2279C90F0695094Dfcd191D11C67c188fe7',
-    contractAbi: [{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"inputs":[{"internalType":"bytes32","name":"key","type":"bytes32"}],"name":"getDomain","outputs":[{"internalType":"string","name":"domain","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"domain","type":"string"},{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"getDomainKey","outputs":[{"internalType":"bytes32","name":"key","type":"bytes32"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"domain","type":"string"}],"name":"register","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}],
+    contractAddress: '0x85D725532fBC970adA75d93b6942Ca76A0CcfDf2',
+    contractAbi:[{"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},{"inputs":[{"internalType":"bytes32","name":"key","type":"bytes32"}],"name":"getDomain","outputs":[{"internalType":"string","name":"domain","type":"string"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"bytes","name":"signature","type":"bytes"}],"name":"getUserKeys","outputs":[{"internalType":"bytes32[]","name":"keys","type":"bytes32[]"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"initialize","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"string","name":"domain","type":"string"}],"name":"register","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"address","name":"newOwner","type":"address"}],"name":"transferOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"}],
     initWeb3: async function () {
       if (window.ethereum) {
         App.web3Provider = window.ethereum
@@ -71,24 +71,46 @@ App = {
       let data = await App.contracts.DDNService.methods.getDomain(key).call({from:App.currentAddress})
       $('#resultDomain').text(data)
     },
-    getDomainKey:async function (){
-      let domain = $('#domain1').val()
-      if(!domain) {
-        layer.open({
-          content: "Please fill in the domain name",
-          skin: 'msg',
-          time: 2 //2秒后自动关闭
-        });
-        return
-      }
-      var hash = web3.utils.soliditySha3(domain).toString("hex");
+    getDomainList:async function (){
+      console.log( App.currentAddress)
+      var hash = web3.utils.soliditySha3(App.currentAddress).toString("hex");
+      console.log(hash)
       let signature = await web3.eth.personal.sign(hash, App.currentAddress)
-      let data = await App.contracts.DDNService.methods.getDomainKey(domain, signature).call({from:App.currentAddress})
-      $('#resultKey').text(data)
+      let data = await App.contracts.DDNService.methods.getUserKeys(signature).call({from:App.currentAddress})
+      console.log(data)
+      let tr = ''
+      data.forEach((item, index) => {
+        tr += ` <tr>
+        <th scope="row">${index+1}</th>
+        <td id="item${index}">${item}</td>
+        <td><button style="width:72px" type="button" class="btn btn-primary js-copy" data-clipboard-action="copy" data-clipboard-target="#item${index}">copy</button></td>
+      </tr>`
+      });
+      let table = `  <table class="table">
+      <tbody>
+        ${tr}
+      </tbody>
+    </table>`
+      $('#resultKey').html(table)
     },       
   };
   
   (function () {
+    var clipboard = new ClipboardJS('.js-copy');
+    clipboard.on('success', function (e) {
+      layer.open({
+        content: "copy success",
+        skin: 'msg',
+        time: 2 //2秒后自动关闭
+      });
+    });
+    clipboard.on('error', function (e) {
+      layer.open({
+        content: "copy faild",
+        skin: 'msg',
+        time: 2
+      });
+    });
      App.initWeb3();
   })();
   
